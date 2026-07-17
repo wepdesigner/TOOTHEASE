@@ -1,0 +1,166 @@
+import React, { useState, useEffect } from 'react';
+import API from '../services/api';
+
+export default function HygieneTracker() {
+  const [stats, setStats] = useState({ streak: 0, points: 0, logs: [] });
+  const [todayLog, setTodayLog] = useState({ brushed: false, flossed: false, mouthwash: false });
+  const [loading, setLoading] = useState(true);
+  const [animating, setAnimating] = useState(null);
+
+  const fetchStats = async () => {
+    try {
+      const { data } = await API.get('/users/me/hygiene');
+      if (data.success) {
+        setStats({ streak: data.streak, points: data.points, logs: data.logs });
+        
+        // Find today's log
+        const today = new Date().toISOString().split('T')[0];
+        const log = data.logs.find(l => l.dateString === today);
+        if (log) {
+          setTodayLog({ brushed: log.brushed, flossed: log.flossed, mouthwash: log.mouthwash });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const handleToggle = async (type) => {
+    if (todayLog[type]) return; // Already completed today
+
+    // Optimistic UI update
+    setTodayLog(prev => ({ ...prev, [type]: true }));
+    setAnimating(type);
+    
+    // Confetti effect / simple bounce timeout
+    setTimeout(() => setAnimating(null), 1000);
+
+    try {
+      const payload = {
+        brushed: type === 'brushed' || todayLog.brushed,
+        flossed: type === 'flossed' || todayLog.flossed,
+        mouthwash: type === 'mouthwash' || todayLog.mouthwash,
+      };
+
+      const { data } = await API.post('/users/me/hygiene', payload);
+      if (data.success) {
+        setStats(prev => ({ ...prev, streak: data.streak, points: data.points }));
+      }
+    } catch (e) {
+      // Revert on failure
+      setTodayLog(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
+  if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Loading your Smile Data...</div>;
+
+  const rewards = [
+    { title: "Free Premium Toothbrush", pts: 500, icon: "ti-brush" },
+    { title: "10% Off Teeth Whitening", pts: 2000, icon: "ti-diamond" },
+    { title: "Free Routine Cleaning", pts: 5000, icon: "ti-spray" },
+  ];
+
+  return (
+    <div className="pp-animate" style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 60 }}>
+      <div className="pp-page-hd" style={{ marginBottom: 30 }}>
+        <div>
+          <h1 className="pp-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="ti ti-trophy" style={{ color: '#f59e0b' }}/> 
+            Smile Points & Hygiene
+          </h1>
+          <p className="pp-page-sub">Track your daily habits and earn rewards.</p>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 30 }}>
+        {/* STATS PANEL */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', padding: 30, borderRadius: 24, textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 10px 25px rgba(245,158,11,0.2)' }}>
+            <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 140, opacity: 0.1 }}>🌟</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Total Smile Points</div>
+            <div style={{ fontSize: 64, fontWeight: 900, color: '#d97706', lineHeight: 1 }}>{stats.points}</div>
+          </div>
+
+          <div style={{ background: '#fff', padding: 30, borderRadius: 24, textAlign: 'center', border: '2px solid #fee2e2' }}>
+            <div style={{ fontSize: 60, marginBottom: 10, filter: stats.streak > 0 ? 'drop-shadow(0 0 10px #ef4444)' : 'none' }}>
+              {stats.streak > 0 ? '🔥' : '🧊'}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>Current Streak</div>
+            <div style={{ fontSize: 48, fontWeight: 900, color: '#b91c1c', lineHeight: 1 }}>{stats.streak} <span style={{fontSize: 24, color: '#f87171'}}>Days</span></div>
+          </div>
+        </div>
+
+        {/* DAILY HABITS */}
+        <div style={{ background: '#fff', padding: 40, borderRadius: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, color: '#0f172a' }}>Today's Checklist</h2>
+          <p style={{ color: '#64748b', marginBottom: 30 }}>Complete all 3 tasks to maintain your streak and earn up to 25 points daily!</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* BRUSHING */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', borderRadius: 16, background: todayLog.brushed ? '#f0fdf4' : '#f8fafc', border: `2px solid ${todayLog.brushed ? '#4ade80' : '#e2e8f0'}`, transition: 'all 0.3s ease' }}>
+              <div style={{ fontSize: 32, marginRight: 20, transform: animating === 'brushed' ? 'scale(1.3) rotate(-15deg)' : 'none', transition: '0.3s ease' }}>🪥</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: todayLog.brushed ? '#166534' : '#334155' }}>Brush Teeth (2x)</div>
+                <div style={{ fontSize: 14, color: todayLog.brushed ? '#15803d' : '#64748b' }}>+10 Points</div>
+              </div>
+              <button onClick={() => handleToggle('brushed')} disabled={todayLog.brushed} style={{ background: todayLog.brushed ? '#22c55e' : '#e2e8f0', color: todayLog.brushed ? '#fff' : '#64748b', border: 'none', padding: '12px 24px', borderRadius: 99, fontWeight: 700, cursor: todayLog.brushed ? 'default' : 'pointer' }}>
+                {todayLog.brushed ? 'Done ✓' : 'Log It'}
+              </button>
+            </div>
+
+            {/* FLOSSING */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', borderRadius: 16, background: todayLog.flossed ? '#f0fdf4' : '#f8fafc', border: `2px solid ${todayLog.flossed ? '#4ade80' : '#e2e8f0'}`, transition: 'all 0.3s ease' }}>
+              <div style={{ fontSize: 32, marginRight: 20, transform: animating === 'flossed' ? 'scale(1.3) rotate(15deg)' : 'none', transition: '0.3s ease' }}>🧵</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: todayLog.flossed ? '#166534' : '#334155' }}>Floss</div>
+                <div style={{ fontSize: 14, color: todayLog.flossed ? '#15803d' : '#64748b' }}>+10 Points</div>
+              </div>
+              <button onClick={() => handleToggle('flossed')} disabled={todayLog.flossed} style={{ background: todayLog.flossed ? '#22c55e' : '#e2e8f0', color: todayLog.flossed ? '#fff' : '#64748b', border: 'none', padding: '12px 24px', borderRadius: 99, fontWeight: 700, cursor: todayLog.flossed ? 'default' : 'pointer' }}>
+                {todayLog.flossed ? 'Done ✓' : 'Log It'}
+              </button>
+            </div>
+
+            {/* MOUTHWASH */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 24px', borderRadius: 16, background: todayLog.mouthwash ? '#f0fdf4' : '#f8fafc', border: `2px solid ${todayLog.mouthwash ? '#4ade80' : '#e2e8f0'}`, transition: 'all 0.3s ease' }}>
+              <div style={{ fontSize: 32, marginRight: 20, transform: animating === 'mouthwash' ? 'scale(1.3) translateY(-10px)' : 'none', transition: '0.3s ease' }}>💧</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: todayLog.mouthwash ? '#166534' : '#334155' }}>Mouthwash</div>
+                <div style={{ fontSize: 14, color: todayLog.mouthwash ? '#15803d' : '#64748b' }}>+5 Points</div>
+              </div>
+              <button onClick={() => handleToggle('mouthwash')} disabled={todayLog.mouthwash} style={{ background: todayLog.mouthwash ? '#22c55e' : '#e2e8f0', color: todayLog.mouthwash ? '#fff' : '#64748b', border: 'none', padding: '12px 24px', borderRadius: 99, fontWeight: 700, cursor: todayLog.mouthwash ? 'default' : 'pointer' }}>
+                {todayLog.mouthwash ? 'Done ✓' : 'Log It'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 50 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 20 }}>Rewards Shop</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+          {rewards.map((r, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: 24, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+              {stats.points >= r.pts && <div style={{ position: 'absolute', top: 10, right: 10, background: '#22c55e', color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 12, textTransform: 'uppercase' }}>Unlocked</div>}
+              
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: stats.points >= r.pts ? '#dcfce7' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: stats.points >= r.pts ? '#16a34a' : '#94a3b8', marginBottom: 16 }}>
+                <i className={`ti ${r.icon}`} style={{ fontSize: 40 }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 8, height: 40 }}>{r.title}</h3>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#d97706', marginBottom: 20 }}>{r.pts.toLocaleString()} pts</div>
+              
+              <button disabled={stats.points < r.pts} style={{ width: '100%', padding: 12, borderRadius: 8, border: 'none', fontWeight: 700, background: stats.points >= r.pts ? '#0f172a' : '#e2e8f0', color: stats.points >= r.pts ? '#fff' : '#94a3b8', cursor: stats.points >= r.pts ? 'pointer' : 'not-allowed', marginTop: 'auto' }}>
+                {stats.points >= r.pts ? 'Claim Reward' : 'Not Enough Points'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

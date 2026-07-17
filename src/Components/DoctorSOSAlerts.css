@@ -1,0 +1,89 @@
+.sos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sos-empty {
+  background: #fff;
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--pp-muted);
+  font-size: 16px;
+  border: 1px dashed #cbd5e1;
+}
+
+.sos-card {
+  background: #fff;
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -2px rgba(239, 68, 68, 0.05);
+  overflow: hidden;
+  position: relative;
+}
+
+.sos-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: #ef4444;
+}
+
+.sos-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #fef2f2;
+}
+
+.sos-time {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 600;
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #fca5a5;
+}
+
+.sos-card-body {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.sos-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sos-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sos-val {
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.sos-card-actions {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
