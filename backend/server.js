@@ -32,11 +32,6 @@ app.use("/api/doctors",       require("./routes/doctor.routes"));
 app.use("/api/appointments",  require("./routes/appointment.routes"));
 app.use("/api/messages",      require("./routes/message.routes"));
 app.use("/api/doctor",        require("./routes/doctorPanel.routes")); 
-
-// app.use("/api/payments",      require("./routes/payment.routes"));
-// app.use("/api/notifications", require("./routes/notification.routes"));
-// app.use("/api/plans",         require("./routes/plan.routes"));
-// app.use("/api/prescriptions", require("./routes/prescription.routes"));
 app.use("/api/admin",         require("./routes/admin.routes"));
 app.use("/api/ai",            require("./routes/aiRoutes"));
 
